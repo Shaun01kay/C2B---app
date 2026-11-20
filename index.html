@@ -1,1 +1,108 @@
+
 <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C2B | Create account or sign in</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#10233e;--green:#24d27a;--blue:#2d8cff;--cream:#f7f4ea;--ink:#15283d;--muted:#617087}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);font:16px system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
+header{background:var(--navy);color:white;padding:22px}
+.brand{font-size:32px;font-weight:900;letter-spacing:-1px}.brand span{color:var(--green)}
+.tag{font-size:14px;color:#e9f1fa;margin-top:4px}
+main{max-width:520px;margin:28px auto;padding:16px}
+.card{background:white;border-radius:22px;padding:24px;box-shadow:0 8px 28px #10233e12}
+h1{margin:0 0 7px;font-size:25px}.sub{color:var(--muted);font-size:14px;line-height:1.5}
+label{display:block;font-weight:700;font-size:13px;margin:15px 0 6px}
+input,select{width:100%;padding:13px;border:1px solid #d7e0e8;border-radius:12px;font:inherit;background:#fff;color:var(--ink)}
+button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;background:var(--green);color:#07351d;font-size:15px;font-weight:800;cursor:pointer}
+.secondary{background:#eaf0f6;color:var(--navy)}
+#status{margin-top:16px;padding:13px;border-radius:12px;background:#f0f5fa;color:#31465e;white-space:pre-wrap;font-size:13px;line-height:1.5}
+.small{font-size:12px;color:#718096;line-height:1.5}.hidden{display:none}
+.pill{display:inline-block;background:#e7f9ef;color:#08743c;padding:5px 10px;border-radius:99px;font-size:12px;font-weight:800;margin:12px 0}
+@media(max-width:560px){main{margin:12px auto;padding:12px}.card{padding:20px}}
+</style>
+</head>
+<body>
+<header>
+<div class="brand">C2B<span>•</span></div>
+<div class="tag">Connect. Communicate. Do Business.</div>
+</header>
+<main>
+<section class="card">
+<div class="pill">ACCOUNT ACCESS</div>
+<h1 id="heading">Join C2B</h1>
+<p class="sub" id="intro">Create your account to discover businesses, request quotes and keep your conversations in one place.</p>
+<div id="formArea">
+<label for="role">I am joining as</label>
+<select id="role"><option value="customer">Customer</option><option value="business">Business</option></select>
+<div id="nameWrap"><label for="name">Full name</label><input id="name" autocomplete="name" placeholder="Your full name"></div>
+<label for="email">Email address</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+<label for="password">Password</label><input id="password" type="password" autocomplete="new-password" placeholder="At least 8 characters">
+<button id="submit" type="button">Create account</button>
+<button class="secondary" id="toggle" type="button">I already have an account — sign in</button>
+</div>
+<div id="signedIn" class="hidden"><p id="welcome"></p><p class="sub">Your C2B account is connected. The next step is to connect the business profile builder and customer home screen.</p><button class="secondary" id="signout" type="button">Sign out</button></div>
+<div id="status" role="status" aria-live="polite">Connected to the C2B project. You can create a customer or business account.</div>
+<p class="small">Use an email address you can access. If email confirmation is enabled, check your inbox after signing up. Never share your password.</p>
+</section>
+</main>
+<script>
+const SUPABASE_URL='https://bivdwqlncarclsxjwljg.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_zdGVdDD4MiglzlukjnPaYA_F8kw6nVj';
+const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+let mode='signup';
+const $=id=>document.getElementById(id);
+const say=s=>$('status').textContent=s;
+function setMode(next){
+ mode=next;
+ $('heading').textContent=mode==='signup'?'Join C2B':'Welcome back';
+ $('intro').textContent=mode==='signup'?'Create your account to discover businesses, request quotes and keep your conversations in one place.':'Sign in to continue to your C2B account.';
+ $('nameWrap').classList.toggle('hidden',mode==='signin');
+ $('role').parentElement.classList.toggle('hidden',mode==='signin');
+ $('submit').textContent=mode==='signup'?'Create account':'Sign in';
+ $('toggle').textContent=mode==='signup'?'I already have an account — sign in':'I need to create an account';
+ $('password').autocomplete=mode==='signup'?'new-password':'current-password';
+}
+function showSession(user){
+ $('formArea').classList.add('hidden');
+ $('signedIn').classList.remove('hidden');
+ $('heading').textContent='You’re signed in';
+ $('intro').textContent='Welcome to C2B.';
+ $('welcome').textContent='Signed in as '+(user.email||'your C2B account');
+}
+$('toggle').onclick=()=>setMode(mode==='signup'?'signin':'signup');
+$('submit').onclick=async()=>{
+ const email=$('email').value.trim();
+ const password=$('password').value;
+ const name=$('name').value.trim();
+ const role=$('role').value;
+ if(!email||!password||(mode==='signup'&&!name)){say('Please complete all required fields.');return;}
+ if(password.length<8){say('Please use a password with at least 8 characters.');return;}
+ say('Please wait…');$('submit').disabled=true;
+ try{
+  let result;
+  if(mode==='signup'){
+   result=await client.auth.signUp({email,password,options:{data:{full_name:name,role}}});
+  }else{
+   result=await client.auth.signInWithPassword({email,password});
+  }
+  if(result.error)throw result.error;
+  if(mode==='signup'&&!result.data.session){say('Your account has been created. Check your email for a confirmation link. After confirming, return here and sign in.');}
+  else if(result.data.user){showSession(result.data.user);say('You are signed in. Your C2B account profile is ready.');}
+ }catch(e){say(e.message||'Something went wrong. Please try again.');}
+ finally{$('submit').disabled=false;}
+};
+$('signout').onclick=async()=>{
+ const {error}=await client.auth.signOut();
+ if(error){say(error.message);return;}
+ $('formArea').classList.remove('hidden');$('signedIn').classList.add('hidden');setMode('signin');say('You have signed out.');
+};
+client.auth.getSession().then(({data,error})=>{if(error){say(error.message);return;}if(data.session?.user)showSession(data.session.user);});
+client.auth.onAuthStateChange((_event,session)=>{if(session?.user)showSession(session.user);});
+</script>
+</body>
+</html>
