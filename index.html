@@ -45,7 +45,32 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
 <button id="submit" type="button">Create account</button>
 <button class="secondary" id="toggle" type="button">I already have an account — sign in</button>
 </div>
-<div id="signedIn" class="hidden"><p id="welcome"></p><p class="sub">Your C2B account is connected. The next step is to connect the business profile builder and customer home screen.</p><button class="secondary" id="signout" type="button">Sign out</button></div>
+<div id="signedIn" class="hidden">
+  <p id="welcome"></p>
+
+  <div id="customerHome" class="hidden">
+    <h2>Discover businesses</h2>
+    <p class="sub">Find services, connect with businesses and request quotes.</p>
+
+    <button type="button">Explore businesses</button>
+    <button type="button">Request a quote</button>
+  </div>
+
+  <div id="businessHome" class="hidden">
+    <h2>Business dashboard</h2>
+    <p class="sub">Build your profile and connect with customers.</p>
+
+    <button type="button">Create business profile</button>
+    <button type="button">Manage services</button>
+    <button type="button">View enquiries</button>
+  </div>
+
+  <button class="secondary" id="signout" type="button">Sign out</button>
+</div>
+
+<div id="status" role="status" aria-live="polite">
+  Connected to the C2B project. You can create a customer or business account.
+</div>
 <div id="status" role="status" aria-live="polite">Connected to the C2B project. You can create a customer or business account.</div>
 <p class="small">Use an email address you can access. If email confirmation is enabled, check your inbox after signing up. Never share your password.</p>
 </section>
@@ -68,6 +93,25 @@ function setMode(next){
  $('password').autocomplete=mode==='signup'?'new-password':'current-password';
 }
 function showSession(user){
+  $('formArea').classList.add('hidden');
+  $('signedIn').classList.remove('hidden');
+
+  $('heading').textContent='Welcome to C2B';
+  $('intro').textContent='Connect. Communicate. Do Business.';
+
+  const role=user.user_metadata?.role;
+
+  $('customerHome').classList.add('hidden');
+  $('businessHome').classList.add('hidden');
+
+  if(role==='business'){
+    $('businessHome').classList.remove('hidden');
+    $('welcome').textContent='Welcome to C2B Business';
+  }else{
+    $('customerHome').classList.remove('hidden');
+    $('welcome').textContent='Welcome to C2B';
+  }
+}
  $('formArea').classList.add('hidden');
  $('signedIn').classList.remove('hidden');
  $('heading').textContent='You’re signed in';
