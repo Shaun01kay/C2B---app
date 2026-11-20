@@ -112,12 +112,9 @@ function showSession(user){
     $('welcome').textContent='Welcome to C2B';
   }
 }
- $('formArea').classList.add('hidden');
- $('signedIn').classList.remove('hidden');
- $('heading').textContent='You’re signed in';
- $('intro').textContent='Welcome to C2B.';
- $('welcome').textContent='Signed in as '+(user.email||'your C2B account');
-}
+
+ 
+ 
 $('toggle').onclick=()=>setMode(mode==='signup'?'signin':'signup');
 $('submit').onclick=async()=>{
  const email=$('email').value.trim();
