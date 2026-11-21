@@ -178,7 +178,7 @@ $('submit').onclick=async()=>{
  }catch(e){say(e.message||'Something went wrong. Please try again.');}
  finally{$('submit').disabled=false;}
 };
-('signout').onclick=async()=>{
+$('signout').onclick=async()=>{
  const {error}=await client.auth.signOut();
  if(error){say(error.message);return;}
  $('formArea').classList.remove('hidden');$('signedIn').classList.add('hidden');setMode('signin');say('You have signed out.');
@@ -254,7 +254,6 @@ $('businessHome').querySelector('button').onclick=()=>{
   $('businessProfileSection').classList.remove('hidden');
 };
 
-
 $('cancelBusinessProfile').onclick=()=>{
   $('businessProfileSection').classList.add('hidden');
   $('businessHome').classList.remove('hidden');
@@ -267,6 +266,8 @@ $('saveBusinessProfile').onclick=async()=>{
     say('Please sign in again.');
     return;
   }
+
+  const businessName=$('businessName').value.trim();
 
   if(!businessName){
     say('Please enter your business name.');
@@ -289,7 +290,7 @@ $('saveBusinessProfile').onclick=async()=>{
 
   const saveButton=$('saveBusinessProfile');
   saveButton.disabled=true;
-  say('Saving your business profile...');
+  say('Saving business profile...');
 
   try{
     const {error}=await client
@@ -299,7 +300,6 @@ $('saveBusinessProfile').onclick=async()=>{
     if(error)throw error;
 
     say('Business profile saved successfully! It is not published yet.');
-
     $('businessProfileSection').classList.add('hidden');
     $('businessHome').classList.remove('hidden');
 
@@ -310,11 +310,7 @@ $('saveBusinessProfile').onclick=async()=>{
   }
 };
 
-  $('businessProfileSection').classList.add('hidden');
-  $('businessHome').classList.remove('hidden');
-};
-
-
+  
 $('backToHome').onclick=()=>{
   $('exploreSection').classList.add('hidden');
   $('customerHome').classList.remove('hidden');
