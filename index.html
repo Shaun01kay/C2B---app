@@ -107,6 +107,7 @@ function showSession(user){
   $('intro').textContent='Connect. Communicate. Do Business.';
 
   const role=user.user_metadata?.role;
+$('exploreSection').classList.add('hidden');
 
   $('customerHome').classList.add('hidden');
   $('businessHome').classList.add('hidden');
