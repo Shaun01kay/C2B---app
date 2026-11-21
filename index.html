@@ -71,6 +71,39 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
     <button type="button">View enquiries</button>
   </div>
 
+<div id="businessProfileSection" class="hidden">
+  <h2>Create your business profile</h2>
+  <p class="sub">Tell customers about your business and the services you offer.</p>
+
+  <label for="businessName">Business name</label>
+  <input id="businessName" type="text" placeholder="Enter business name">
+
+  <label for="businessCategory">Business category</label>
+  <input id="businessCategory" type="text" placeholder="e.g. Painting, Plumbing, Electrical">
+
+  <label for="businessDescription">Business description</label>
+  <textarea id="businessDescription" placeholder="Describe your business and experience"></textarea>
+
+  <label for="businessLocation">Business location</label>
+  <input id="businessLocation" type="text" placeholder="Town or city">
+
+  <label for="businessArea">Service areas</label>
+  <input id="businessArea" type="text" placeholder="Areas where you provide services">
+
+  <label for="businessServices">Services offered</label>
+  <textarea id="businessServices" placeholder="Separate services with commas"></textarea>
+
+  <label for="businessWhatsapp">WhatsApp number</label>
+  <input id="businessWhatsapp" type="tel" placeholder="e.g. 27818416469">
+
+  <label for="businessHours">Business hours</label>
+  <input id="businessHours" type="text" placeholder="e.g. Monday–Friday, 08:00–17:00">
+
+  <button type="button" id="saveBusinessProfile">Save business profile</button>
+  <button type="button" id="cancelBusinessProfile">Back to dashboard</button>
+</div>
+
+
   <button class="secondary" id="signout" type="button">Sign out</button>
 </div>
 
@@ -215,6 +248,72 @@ $('customerHome').querySelector('button').onclick=()=>{
   $('exploreSection').classList.remove('hidden');
   loadBusinesses();
 };
+
+$('businessHome').querySelector('button').onclick=()=>{
+  $('businessHome').classList.add('hidden');
+  $('businessProfileSection').classList.remove('hidden');
+};
+
+
+$('cancelBusinessProfile').onclick=()=>{
+  $('businessProfileSection').classList.add('hidden');
+  $('businessHome').classList.remove('hidden');
+};
+
+$('saveBusinessProfile').onclick=async()=>{
+  const {data:{user},error:userError}=await client.auth.getUser();
+
+  if(userError||!user){
+    say('Please sign in again.');
+    return;
+  }
+
+  if(!businessName){
+    say('Please enter your business name.');
+    return;
+  }
+
+  const profile={
+    id:user.id,
+    business_name:businessName,
+    category:$('businessCategory').value.trim(),
+    description:$('businessDescription').value.trim(),
+    location:$('businessLocation').value.trim(),
+    service_area:$('businessArea').value.trim(),
+    services:$('businessServices').value.split(',').map(s=>s.trim()).filter(Boolean),
+    whatsapp:$('businessWhatsapp').value.trim(),
+    hours:$('businessHours').value.trim(),
+    is_published:false,
+    updated_at:new Date().toISOString()
+  };
+
+  const saveButton=$('saveBusinessProfile');
+  saveButton.disabled=true;
+  say('Saving your business profile...');
+
+  try{
+    const {error}=await client
+      .from('business_profiles')
+      .upsert(profile,{onConflict:'id'});
+
+    if(error)throw error;
+
+    say('Business profile saved successfully! It is not published yet.');
+
+    $('businessProfileSection').classList.add('hidden');
+    $('businessHome').classList.remove('hidden');
+
+  }catch(e){
+    say('Could not save profile: '+e.message);
+  }finally{
+    saveButton.disabled=false;
+  }
+};
+
+  $('businessProfileSection').classList.add('hidden');
+  $('businessHome').classList.remove('hidden');
+};
+
 
 $('backToHome').onclick=()=>{
   $('exploreSection').classList.add('hidden');
