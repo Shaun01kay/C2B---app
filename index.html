@@ -143,7 +143,7 @@ $('submit').onclick=async()=>{
  }catch(e){say(e.message||'Something went wrong. Please try again.');}
  finally{$('submit').disabled=false;}
 };
-$('signout').onclick=async()=>{
+('signout').onclick=async()=>{
  const {error}=await client.auth.signOut();
  if(error){say(error.message);return;}
  $('formArea').classList.remove('hidden');$('signedIn').classList.add('hidden');setMode('signin');say('You have signed out.');
