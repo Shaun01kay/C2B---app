@@ -93,7 +93,8 @@ function setMode(next){
  $('heading').textContent=mode==='signup'?'Join C2B':'Welcome back';
  $('intro').textContent=mode==='signup'?'Create your account to discover businesses, request quotes and keep your conversations in one place.':'Sign in to continue to your C2B account.';
  $('nameWrap').classList.toggle('hidden',mode==='signin');
- $('role').parentElement.classList.toggle('hidden',mode==='signin');
+ $('role').classList.toggle('hidden',mode==='signin');
+$('role').previousElementSibling.classList.toggle('hidden',mode==='signin');
  $('submit').textContent=mode==='signup'?'Create account':'Sign in';
  $('toggle').textContent=mode==='signup'?'I already have an account — sign in':'I need to create an account';
  $('password').autocomplete=mode==='signup'?'new-password':'current-password';
