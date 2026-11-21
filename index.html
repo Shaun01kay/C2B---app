@@ -150,6 +150,15 @@ $('signout').onclick=async()=>{
 };
 client.auth.getSession().then(({data,error})=>{if(error){say(error.message);return;}if(data.session?.user)showSession(data.session.user);});
 client.auth.onAuthStateChange((_event,session)=>{if(session?.user)showSession(session.user);});
+$('customerHome').querySelector('button').onclick=()=>{
+  $('customerHome').classList.add('hidden');
+  $('exploreSection').classList.remove('hidden');
+};
+
+$('backToHome').onclick=()=>{
+  $('exploreSection').classList.add('hidden');
+  $('customerHome').classList.remove('hidden');
+};
 </script>
 </body>
 </html>
