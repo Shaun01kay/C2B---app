@@ -58,8 +58,8 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
 
 <div id="exploreSection" class="hidden">
   <h2>Explore Businesses</h2>
-  <input type="text" id="businessSearch" placeholder="Search businesses...">
-  <div id="businessList"></div>
+  <input type="text" id="businessSearch" placeholder="Search by name, service or location...">
+<div id="businessList"></div>
   <button type="button" id="backToHome">Back</button>
 </div>
   <div id="businessHome" class="hidden">
@@ -150,9 +150,68 @@ $('signout').onclick=async()=>{
 };
 client.auth.getSession().then(({data,error})=>{if(error){say(error.message);return;}if(data.session?.user)showSession(data.session.user);});
 client.auth.onAuthStateChange((_event,session)=>{if(session?.user)showSession(session.user);});
+let allBusinesses=[];
+
+function renderBusinesses(search=''){
+  const list=$('businessList');
+  const term=search.toLowerCase().trim();
+
+  const filtered=allBusinesses.filter(b=>
+    [
+      b.business_name,
+      b.category,
+      b.description,
+      b.location,
+      b.service_area,
+      ...(b.services||[])
+    ].join(' ').toLowerCase().includes(term)
+  );
+
+  if(filtered.length===0){
+    list.innerHTML='<p>No matching businesses found.</p>';
+    return;
+  }
+
+  list.innerHTML=filtered.map(b=>`
+    <div class="business-card">
+      <h3>${b.business_name||'Unnamed business'}</h3>
+      <p>${b.category||'General services'}</p>
+      <p>${b.description||''}</p>
+      <p>${b.location||b.service_area||''}</p>
+      <p>${(b.services||[]).join(', ')}</p>
+    </div>
+  `).join('');
+}
+
+async function loadBusinesses(){
+  const list=$('businessList');
+  list.innerHTML='<p>Loading businesses...</p>';
+
+  const {data,error}=await client
+    .from('business_profiles')
+    .select('business_name,category,description,location,service_area,services,whatsapp')
+    .eq('is_published',true)
+    .order('business_name');
+
+  if(error){
+    list.innerHTML='<p>Could not load businesses. Please try again.</p>';
+    console.error(error);
+    return;
+  }
+
+  allBusinesses=data||[];
+  renderBusinesses($('businessSearch').value);
+}
+
+$('businessSearch').addEventListener('input',()=>{
+  renderBusinesses($('businessSearch').value);
+});
+
+  
 $('customerHome').querySelector('button').onclick=()=>{
   $('customerHome').classList.add('hidden');
   $('exploreSection').classList.remove('hidden');
+  loadBusinesses();
 };
 
 $('backToHome').onclick=()=>{
