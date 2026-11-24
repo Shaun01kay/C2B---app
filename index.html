@@ -269,6 +269,15 @@ $('customerHome').querySelector('button').onclick=()=>{
   $('exploreSection').classList.remove('hidden');
   loadBusinesses();
 };
+$('requestQuote').onclick=()=>{
+  $('customerHome').classList.add('hidden');
+  $('quoteSection').classList.remove('hidden');
+};
+
+$('cancelQuote').onclick=()=>{
+  $('quoteSection').classList.add('hidden');
+  $('customerHome').classList.remove('hidden');
+};
 
 $('businessHome').querySelector('button').onclick=()=>{
   $('businessHome').classList.add('hidden');
