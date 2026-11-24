@@ -62,6 +62,25 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
 <div id="businessList"></div>
   <button type="button" id="backToHome">Back</button>
 </div>
+<div id="quoteSection" class="hidden">
+  <h2>Request a Quote</h2>
+  <p class="sub">Tell us what service you need.</p>
+
+  <label for="quoteService">Service required</label>
+  <input id="quoteService" placeholder="e.g. Painting">
+
+  <label for="quoteDescription">Describe the work</label>
+  <textarea id="quoteDescription" placeholder="Explain what you need done"></textarea>
+
+  <label for="quoteLocation">Your location</label>
+  <input id="quoteLocation" placeholder="Town or city">
+
+  <label for="quoteContact">Contact number</label>
+  <input id="quoteContact" type="tel" placeholder="Your phone number">
+
+  <button type="button" id="submitQuote">Submit request</button>
+  <button type="button" id="cancelQuote" class="secondary">Back</button>
+</div>
   <div id="businessHome" class="hidden">
     <h2>Business dashboard</h2>
     <p class="sub">Build your profile and connect with customers.</p>
