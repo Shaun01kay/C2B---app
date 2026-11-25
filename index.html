@@ -189,6 +189,7 @@ async function loadEnquiries(){
     return;
   }
 
+  
   list.innerHTML=data.map(q=>`
     <div class="business-card">
       <h3>${escapeHTML(q.service_required||'Service request')}</h3>
@@ -213,6 +214,32 @@ async function loadEnquiries(){
       </button>
     </div>
   `).join('');
+
+  list.querySelectorAll('.update-enquiry-status').forEach(button=>{
+    button.onclick=async()=>{
+      const id=button.dataset.id;
+      const status=$(`status-${id}`).value;
+
+      button.disabled=true;
+      say('Updating enquiry status...');
+
+      try{
+        const {error}=await client
+          .from('quote_requests')
+          .update({status})
+          .eq('id',id);
+
+        if(error)throw error;
+
+        say('Enquiry status updated successfully.');
+        await loadEnquiries();
+
+      }catch(e){
+        say('Could not update enquiry status: '+e.message);
+        button.disabled=false;
+      }
+    };
+  });
 }
 function setMode(next){
  mode=next;
