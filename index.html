@@ -402,7 +402,43 @@ $('publishBusinessProfile').classList.remove('hidden');
   }
 };
 
-  
+$('publishBusinessProfile').onclick=async()=>{
+  const button=$('publishBusinessProfile');
+  button.disabled=true;
+  say('Publishing your business profile...');
+
+  try{
+    const {data:{user},error:userError}=await client.auth.getUser();
+
+    if(userError||!user){
+      throw new Error('Please sign in again.');
+    }
+
+    const {data,error}=await client
+      .from('business_profiles')
+      .update({
+        is_published:true,
+        updated_at:new Date().toISOString()
+      })
+      .eq('id',user.id)
+      .select('id')
+      .maybeSingle();
+
+    if(error)throw error;
+
+    if(!data){
+      throw new Error('Please save your business profile first.');
+    }
+
+    say('Your business profile is now published!');
+    button.classList.add('hidden');
+
+  }catch(e){
+    say('Could not publish profile: '+e.message);
+  }finally{
+    button.disabled=false;
+  }
+};  
 $('backToHome').onclick=()=>{
   $('exploreSection').classList.add('hidden');
   $('customerHome').classList.remove('hidden');
