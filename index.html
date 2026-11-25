@@ -82,6 +82,16 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
   <button type="button" id="submitQuote">Submit request</button>
   <button type="button" id="cancelQuote" class="secondary">Back</button>
 </div>
+<div id="customerEnquiriesSection" class="hidden">
+  <h2>My Enquiries</h2>
+  <p class="sub">Track the progress of your quote requests.</p>
+
+  <div id="customerEnquiriesList"></div>
+
+  <button type="button" id="backFromCustomerEnquiries" class="secondary">
+    Back to dashboard
+  </button>
+</div>
   <div id="businessHome" class="hidden">
     <h2>Business dashboard</h2>
     <p class="sub">Build your profile and connect with customers.</p>
@@ -241,6 +251,44 @@ async function loadEnquiries(){
       }
     };
   });
+}
+async function loadCustomerEnquiries(){
+  const list=$('customerEnquiriesList');
+  list.innerHTML='<p>Loading your enquiries...</p>';
+
+  const {data:{user},error:userError}=await client.auth.getUser();
+
+  if(userError||!user){
+    list.innerHTML='<p>Please sign in again.</p>';
+    return;
+  }
+
+  const {data,error}=await client
+    .from('quote_requests')
+    .select('id,service_required,work_description,location,status,created_at')
+    .eq('customer_id',user.id)
+    .order('created_at',{ascending:false});
+
+  if(error){
+    console.error(error);
+    list.innerHTML='<p>Could not load your enquiries.</p>';
+    return;
+  }
+
+  if(!data||data.length===0){
+    list.innerHTML='<p>You have not submitted any enquiries yet.</p>';
+    return;
+  }
+
+  list.innerHTML=data.map(q=>`
+    <div class="business-card">
+      <h3>${escapeHTML(q.service_required||'Service request')}</h3>
+      <p>${escapeHTML(q.work_description||'')}</p>
+      <p><strong>Location:</strong> ${escapeHTML(q.location||'')}</p>
+      <p><strong>Status:</strong> ${escapeHTML(q.status||'new')}</p>
+      <p><strong>Submitted:</strong> ${escapeHTML(new Date(q.created_at).toLocaleDateString())}</p>
+    </div>
+  `).join('');
 }
 function setMode(next){
  mode=next;
@@ -552,6 +600,16 @@ $('backFromEnquiries').onclick=()=>{
 };
 $('backToHome').onclick=()=>{
   $('exploreSection').classList.add('hidden');
+  $('customerHome').classList.remove('hidden');
+};
+$('myEnquiries').onclick=()=>{
+  $('customerHome').classList.add('hidden');
+  $('customerEnquiriesSection').classList.remove('hidden');
+  loadCustomerEnquiries();
+};
+
+$('backFromCustomerEnquiries').onclick=()=>{
+  $('customerEnquiriesSection').classList.add('hidden');
   $('customerHome').classList.remove('hidden');
 };
 </script>
