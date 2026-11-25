@@ -185,7 +185,7 @@ async function loadEnquiries(){
 
   const {data,error}=await client
     .from('quote_requests')
-    .select('id,service_required,work_description,location,contact_number,status,created_at')
+    .select('id,service_required,work_description,location,status,created_at,business_profiles(business_name)')
     .eq('business_id',user.id)
     .order('created_at',{ascending:false});
 
@@ -252,6 +252,7 @@ async function loadEnquiries(){
     };
   });
 }
+
 async function loadCustomerEnquiries(){
   const list=$('customerEnquiriesList');
   list.innerHTML='<p>Loading your enquiries...</p>';
@@ -265,7 +266,7 @@ async function loadCustomerEnquiries(){
 
   const {data,error}=await client
     .from('quote_requests')
-    .select('id,service_required,work_description,location,status,created_at')
+    .select('id,service_required,work_description,location,status,created_at,business_profiles(business_name)')
     .eq('customer_id',user.id)
     .order('created_at',{ascending:false});
 
@@ -290,6 +291,9 @@ async function loadCustomerEnquiries(){
     </div>
   `).join('');
 }
+
+
+  
 function setMode(next){
  mode=next;
  $('heading').textContent=mode==='signup'?'Join C2B':'Welcome back';
@@ -551,6 +555,7 @@ $('publishBusinessProfile').classList.remove('hidden');
   }
 };
 
+   
 $('publishBusinessProfile').onclick=async()=>{
   const button=$('publishBusinessProfile');
   button.disabled=true;
@@ -587,7 +592,8 @@ $('publishBusinessProfile').onclick=async()=>{
   }finally{
     button.disabled=false;
   }
-};  
+};
+
 $('viewEnquiries').onclick=()=>{
   $('businessHome').classList.add('hidden');
   $('enquiriesSection').classList.remove('hidden');
