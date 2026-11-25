@@ -207,6 +207,7 @@ $('signout').onclick=async()=>{
 client.auth.getSession().then(({data,error})=>{if(error){say(error.message);return;}if(data.session?.user)showSession(data.session.user);});
 client.auth.onAuthStateChange((_event,session)=>{if(session?.user)showSession(session.user);});
 let allBusinesses=[];
+let selectedBusinessId=null;
 
 function renderBusinesses(search=''){
   const list=$('businessList');
@@ -235,8 +236,20 @@ function renderBusinesses(search=''){
       <p>${b.description||''}</p>
       <p>${b.location||b.service_area||''}</p>
       <p>${(b.services||[]).join(', ')}</p>
+<button type="button" class="business-quote-button" data-business-id="${b.id}">
+  Request a quote
+</button>
     </div>
-  `).join('');
+    `).join('');
+
+  list.querySelectorAll('.business-quote-button').forEach(button=>{
+    button.onclick=()=>{
+      selectedBusinessId=button.dataset.businessId;
+
+      $('exploreSection').classList.add('hidden');
+      $('quoteSection').classList.remove('hidden');
+    };
+  });
 }
 
 async function loadBusinesses(){
@@ -245,7 +258,7 @@ async function loadBusinesses(){
 
   const {data,error}=await client
     .from('business_profiles')
-    .select('business_name,category,description,location,service_area,services,whatsapp')
+    .select('id,business_name,category,description,location,service_area,services,whatsapp')
     .eq('is_published',true)
     .order('business_name');
 
@@ -271,7 +284,8 @@ $('customerHome').querySelector('button').onclick=()=>{
 };
 $('requestQuote').onclick=()=>{
   $('customerHome').classList.add('hidden');
-  $('quoteSection').classList.remove('hidden');
+  $('exploreSection').classList.remove('hidden');
+  loadBusinesses();
 };
 
 $('cancelQuote').onclick=()=>{
@@ -288,6 +302,10 @@ $('submitQuote').onclick=async()=>{
     say('Please complete all fields.');
     return;
   }
+  if(!selectedBusinessId){
+    say('Please select a business first.');
+    return;
+  }
 
   const {data:{user},error:userError}=await client.auth.getUser();
 
@@ -300,6 +318,9 @@ $('submitQuote').onclick=async()=>{
     .from('quote_requests')
     .insert({
       customer_id:user.id,
+
+business_id:selectedBusinessId,
+
       service_required:serviceRequired,
       work_description:workDescription,
       location:location,
@@ -313,6 +334,7 @@ $('submitQuote').onclick=async()=>{
   }
 
   say('Your quote request has been submitted successfully!');
+selectedBusinessId=null;
 
   $('quoteService').value='';
   $('quoteDescription').value='';
