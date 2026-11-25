@@ -278,7 +278,50 @@ $('cancelQuote').onclick=()=>{
   $('quoteSection').classList.add('hidden');
   $('customerHome').classList.remove('hidden');
 };
+$('submitQuote').onclick=async()=>{
+  const serviceRequired=$('quoteService').value.trim();
+  const workDescription=$('quoteDescription').value.trim();
+  const location=$('quoteLocation').value.trim();
+  const contactNumber=$('quoteContact').value.trim();
 
+  if(!serviceRequired||!workDescription||!location||!contactNumber){
+    say('Please complete all fields.');
+    return;
+  }
+
+  const {data:{user},error:userError}=await client.auth.getUser();
+
+  if(userError||!user){
+    say('Please sign in again.');
+    return;
+  }
+
+  const {error}=await client
+    .from('quote_requests')
+    .insert({
+      customer_id:user.id,
+      service_required:serviceRequired,
+      work_description:workDescription,
+      location:location,
+      contact_number:contactNumber
+    });
+
+  if(error){
+    console.error(error);
+    say('Could not submit your request. Please try again.');
+    return;
+  }
+
+  say('Your quote request has been submitted successfully!');
+
+  $('quoteService').value='';
+  $('quoteDescription').value='';
+  $('quoteLocation').value='';
+  $('quoteContact').value='';
+
+  $('quoteSection').classList.add('hidden');
+  $('customerHome').classList.remove('hidden');
+};
 $('businessHome').querySelector('button').onclick=()=>{
   $('businessHome').classList.add('hidden');
   $('businessProfileSection').classList.remove('hidden');
