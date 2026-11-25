@@ -379,7 +379,6 @@ $('saveBusinessProfile').onclick=async()=>{
     services:$('businessServices').value.split(',').map(s=>s.trim()).filter(Boolean),
     whatsapp:$('businessWhatsapp').value.trim(),
     hours:$('businessHours').value.trim(),
-    is_published:false,
     updated_at:new Date().toISOString()
   };
 
@@ -394,10 +393,8 @@ $('saveBusinessProfile').onclick=async()=>{
 
     if(error)throw error;
 
-    say('Business profile saved successfully! It is not published yet.');
-    $('businessProfileSection').classList.add('hidden');
-    $('businessHome').classList.remove('hidden');
-
+    say('Business profile saved successfully! You can now publish it.');
+$('publishBusinessProfile').classList.remove('hidden');
   }catch(e){
     say('Could not save profile: '+e.message);
   }finally{
