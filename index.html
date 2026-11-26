@@ -277,6 +277,12 @@ function escapeHTML(value){
     "'":'&#39;'
   })[char]);
 }
+
+
+  
+     
+
+  
 function getStatusInfo(status){
   const statuses={
     new:{
@@ -284,6 +290,25 @@ function getStatusInfo(status){
       message:'Your request has been received. The business has not started it yet.',
       className:'status-new'
     },
+    in_progress:{
+      label:'In Progress',
+      message:'The business is working on your request.',
+      className:'status-progress'
+    },
+    completed:{
+      label:'Completed',
+      message:'The business has marked this request as completed.',
+      className:'status-completed'
+    },
+    cancelled:{
+      label:'Cancelled',
+      message:'This request has been cancelled.',
+      className:'status-cancelled'
+    }
+  };
+
+  return statuses[status]||statuses.new;
+}
 
 async function loadNotifications(){
   const list=$('notificationList');
@@ -358,25 +383,8 @@ async function loadNotifications(){
   });
 }
 
-    in_progress:{
-      label:'In Progress',
-      message:'The business is working on your request.',
-      className:'status-progress'
-    },
-    completed:{
-      label:'Completed',
-      message:'The business has marked this request as completed.',
-      className:'status-completed'
-    },
-    cancelled:{
-      label:'Cancelled',
-      message:'This request has been cancelled.',
-      className:'status-cancelled'
-    }
-  };
 
-  return statuses[status]||statuses.new;
-}
+    
 async function loadEnquiries(){
   const list=$('enquiriesList');
   list.innerHTML='<p>Loading enquiries...</p>';
@@ -557,9 +565,6 @@ function showSession(user){
   loadNotifications();
 }
 
-}
-
- 
  
 $('toggle').onclick=()=>setMode(mode==='signup'?'signin':'signup');
 $('submit').onclick=async()=>{
