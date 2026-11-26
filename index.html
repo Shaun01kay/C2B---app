@@ -97,6 +97,22 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
   color:var(--muted);
   font-size:12px;
 }
+.notification-type{
+  display:inline-block;
+  background:#eaf0f6;
+  color:var(--navy);
+  padding:5px 10px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:800;
+}
+
+.notification-related{
+  background:#f0f8f3;
+  border-radius:10px;
+  padding:10px;
+  margin:10px 0;
+}
 @media(max-width:560px){main{margin:12px auto;padding:12px}.card{padding:20px}}
 </style>
 </head>
@@ -310,6 +326,11 @@ function getStatusInfo(status){
   return statuses[status]||statuses.new;
 }
 
+
+  
+      
+
+      
 async function loadNotifications(){
   const list=$('notificationList');
   list.innerHTML='<p>Loading notifications...</p>';
@@ -323,7 +344,16 @@ async function loadNotifications(){
 
   const {data,error}=await client
     .from('notifications')
-    .select('id,title,message,is_read,created_at,notification_type')
+    .select(`
+      id,
+      title,
+      message,
+      is_read,
+      created_at,
+      notification_type,
+      quote_request_id,
+      quote_requests(service_required)
+    `)
     .eq('recipient_id',user.id)
     .order('created_at',{ascending:false});
 
@@ -345,23 +375,50 @@ async function loadNotifications(){
     return;
   }
 
-  list.innerHTML=notifications.map(n=>`
-    <div class="notification-card ${n.is_read?'':'notification-unread'}">
-      <h3>${escapeHTML(n.title)}</h3>
-      <p>${escapeHTML(n.message)}</p>
-      <p class="notification-date">
-        ${escapeHTML(new Date(n.created_at).toLocaleString())}
-      </p>
-      <p><strong>${n.is_read?'Read':'Unread'}</strong></p>
-      ${n.is_read?'':`
-        <button type="button"
-          class="mark-notification-read"
-          data-id="${escapeHTML(n.id)}">
-          Mark as read
-        </button>
-      `}
-    </div>
-  `).join('');
+  list.innerHTML=notifications.map(n=>{
+    const typeLabel=
+      n.notification_type==='new_enquiry'
+        ? 'New enquiry'
+        : n.notification_type==='status_update'
+        ? 'Status update'
+        : 'Notification';
+
+    const serviceName=
+      n.quote_requests?.service_required||'Enquiry details unavailable';
+
+    return `
+      <div class="notification-card ${n.is_read?'':'notification-unread'}">
+
+        <span class="notification-type">
+          ${typeLabel}
+        </span>
+
+        <h3>${escapeHTML(n.title)}</h3>
+
+        <div class="notification-related">
+          <strong>Related enquiry:</strong>
+          ${escapeHTML(serviceName)}
+        </div>
+
+        <p>${escapeHTML(n.message)}</p>
+
+        <p class="notification-date">
+          Received: ${escapeHTML(new Date(n.created_at).toLocaleString())}
+        </p>
+
+        <p><strong>${n.is_read?'Read':'Unread'}</strong></p>
+
+        ${n.is_read?'':`
+          <button type="button"
+            class="mark-notification-read"
+            data-id="${escapeHTML(n.id)}">
+            Mark as read
+          </button>
+        `}
+
+      </div>
+    `;
+  }).join('');
 
   list.querySelectorAll('.mark-notification-read').forEach(button=>{
     button.onclick=async()=>{
@@ -382,6 +439,7 @@ async function loadNotifications(){
     };
   });
 }
+
 
 
     
