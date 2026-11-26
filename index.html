@@ -258,29 +258,30 @@ async function loadEnquiries(){
     return;
   }
 
- list.innerHTML=data.map(q=>{
-  const info=getStatusInfo(q.status||'new');
+ list.innerHTML=data.map(q=>`
+  <div class="business-card">
+    <h3>${escapeHTML(q.service_required||'Service request')}</h3>
+    <p>${escapeHTML(q.work_description||'')}</p>
+    <p><strong>Location:</strong> ${escapeHTML(q.location||'')}</p>
+    <p><strong>Contact:</strong> ${escapeHTML(q.contact_number||'')}</p>
+    <p><strong>Status:</strong> ${escapeHTML(q.status||'new')}</p>
 
-  return `
-    <div class="business-card enquiry-card">
-      <h3>${escapeHTML(q.service_required||'Service request')}</h3>
+    <label for="status-${escapeHTML(q.id)}">Update status</label>
 
-      <p><strong>Business:</strong> ${escapeHTML(q.business_profiles?.business_name||'Business name unavailable')}</p>
+    <select id="status-${escapeHTML(q.id)}">
+      <option value="new" ${q.status==='new'?'selected':''}>New</option>
+      <option value="in_progress" ${q.status==='in_progress'?'selected':''}>In Progress</option>
+      <option value="completed" ${q.status==='completed'?'selected':''}>Completed</option>
+      <option value="cancelled" ${q.status==='cancelled'?'selected':''}>Cancelled</option>
+    </select>
 
-      <p>${escapeHTML(q.work_description||'')}</p>
-
-      <p><strong>Location:</strong> ${escapeHTML(q.location||'')}</p>
-
-      <div class="status-badge ${info.className}">
-        ${info.label}
-      </div>
-
-      <p>${info.message}</p>
-
-      <p><strong>Submitted:</strong> ${escapeHTML(new Date(q.created_at).toLocaleDateString())}</p>
-    </div>
-  `;
-}).join('');
+    <button type="button"
+      class="update-enquiry-status"
+      data-id="${escapeHTML(q.id)}">
+      Update status
+    </button>
+  </div>
+`).join('');
 
   list.querySelectorAll('.update-enquiry-status').forEach(button=>{
     button.onclick=async()=>{
@@ -337,15 +338,29 @@ async function loadCustomerEnquiries(){
     return;
   }
 
-  list.innerHTML=data.map(q=>`
-    <div class="business-card">
+  
+list.innerHTML=data.map(q=>{
+  const info=getStatusInfo(q.status||'new');
+
+  return `
+    <div class="business-card enquiry-card">
       <h3>${escapeHTML(q.service_required||'Service request')}</h3>
+
+      <p><strong>Business:</strong> ${escapeHTML(q.business_profiles?.business_name||'Business name unavailable')}</p>
+
       <p>${escapeHTML(q.work_description||'')}</p>
+
       <p><strong>Location:</strong> ${escapeHTML(q.location||'')}</p>
-      <p><strong>Status:</strong> ${escapeHTML(q.status||'new')}</p>
+
+      <div class="status-badge ${info.className}">${info.label}</div>
+
+      <p>${info.message}</p>
+
       <p><strong>Submitted:</strong> ${escapeHTML(new Date(q.created_at).toLocaleDateString())}</p>
     </div>
-  `).join('');
+  `;
+}).join('');
+
 }
 
 
