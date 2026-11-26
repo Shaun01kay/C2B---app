@@ -55,6 +55,48 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
 .status-progress{background:#e5f1ff;color:#1456a0}
 .status-completed{background:#e4f8ec;color:#08743c}
 .status-cancelled{background:#fde8e8;color:#a32323}
+.notification-bar{
+  display:flex;
+  gap:10px;
+  margin:18px 0;
+}
+
+.notification-button{
+  background:var(--navy);
+  color:white;
+  margin-top:0;
+}
+
+.notification-count{
+  display:inline-block;
+  background:#ff4545;
+  color:white;
+  border-radius:50px;
+  padding:3px 8px;
+  margin-left:6px;
+  font-size:12px;
+}
+
+.notification-card{
+  background:#fff;
+  border:1px solid #dfe7ef;
+  border-radius:15px;
+  padding:16px;
+  margin:12px 0;
+}
+
+.notification-unread{
+  border-left:5px solid var(--green);
+}
+
+.notification-card p{
+  line-height:1.5;
+}
+
+.notification-date{
+  color:var(--muted);
+  font-size:12px;
+}
 @media(max-width:560px){main{margin:12px auto;padding:12px}.card{padding:20px}}
 </style>
 </head>
@@ -79,6 +121,37 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
 </div>
 <div id="signedIn" class="hidden">
   <p id="welcome"></p>
+
+  <div class="notification-bar">
+    <button type="button"
+      id="openNotifications"
+      class="notification-button">
+      🔔 Notifications
+      <span id="unreadCount" class="notification-count hidden">0</span>
+    </button>
+  </div>
+
+  <div id="notificationInbox" class="hidden">
+    <h2>Notifications & Inbox</h2>
+
+    <p class="sub">
+      Keep track of your enquiries and business updates.
+    </p>
+
+    <button type="button" id="refreshNotifications" class="secondary">
+      Refresh notifications
+    </button>
+
+    <button type="button" id="markAllRead" class="secondary">
+      Mark all as read
+    </button>
+
+    <div id="notificationList"></div>
+
+    <button type="button" id="backFromNotifications" class="secondary">
+      Back to dashboard
+    </button>
+  </div>
 
   <div id="customerHome" class="hidden">
     <h2>Discover businesses</h2>
@@ -211,6 +284,80 @@ function getStatusInfo(status){
       message:'Your request has been received. The business has not started it yet.',
       className:'status-new'
     },
+
+async function loadNotifications(){
+  const list=$('notificationList');
+  list.innerHTML='<p>Loading notifications...</p>';
+
+  const {data:{user},error:userError}=await client.auth.getUser();
+
+  if(userError||!user){
+    list.innerHTML='<p>Please sign in again.</p>';
+    return;
+  }
+
+  const {data,error}=await client
+    .from('notifications')
+    .select('id,title,message,is_read,created_at,notification_type')
+    .eq('recipient_id',user.id)
+    .order('created_at',{ascending:false});
+
+  if(error){
+    console.error(error);
+    list.innerHTML='<p>Could not load notifications: '+
+      escapeHTML(error.message)+'</p>';
+    return;
+  }
+
+  const notifications=data||[];
+  const unread=notifications.filter(n=>!n.is_read).length;
+
+  $('unreadCount').textContent=unread>99?'99+':unread;
+  $('unreadCount').classList.toggle('hidden',unread===0);
+
+  if(notifications.length===0){
+    list.innerHTML='<p>No notifications yet. New updates will appear here.</p>';
+    return;
+  }
+
+  list.innerHTML=notifications.map(n=>`
+    <div class="notification-card ${n.is_read?'':'notification-unread'}">
+      <h3>${escapeHTML(n.title)}</h3>
+      <p>${escapeHTML(n.message)}</p>
+      <p class="notification-date">
+        ${escapeHTML(new Date(n.created_at).toLocaleString())}
+      </p>
+      <p><strong>${n.is_read?'Read':'Unread'}</strong></p>
+      ${n.is_read?'':`
+        <button type="button"
+          class="mark-notification-read"
+          data-id="${escapeHTML(n.id)}">
+          Mark as read
+        </button>
+      `}
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.mark-notification-read').forEach(button=>{
+    button.onclick=async()=>{
+      button.disabled=true;
+
+      const {error}=await client
+        .from('notifications')
+        .update({is_read:true})
+        .eq('id',button.dataset.id);
+
+      if(error){
+        say('Could not mark notification as read: '+error.message);
+        button.disabled=false;
+        return;
+      }
+
+      await loadNotifications();
+    };
+  });
+}
+
     in_progress:{
       label:'In Progress',
       message:'The business is working on your request.',
@@ -376,6 +523,9 @@ $('role').previousElementSibling.classList.toggle('hidden',mode==='signin');
  $('toggle').textContent=mode==='signup'?'I already have an account — sign in':'I need to create an account';
  $('password').autocomplete=mode==='signup'?'new-password':'current-password';
 }
+
+let currentRole=null;
+
 function showSession(user){
   $('formArea').classList.add('hidden');
   $('signedIn').classList.remove('hidden');
@@ -384,7 +534,14 @@ function showSession(user){
   $('intro').textContent='Connect. Communicate. Do Business.';
 
   const role=user.user_metadata?.role;
-$('exploreSection').classList.add('hidden');
+  currentRole=role;
+
+  $('exploreSection').classList.add('hidden');
+  $('quoteSection').classList.add('hidden');
+  $('customerEnquiriesSection').classList.add('hidden');
+  $('enquiriesSection').classList.add('hidden');
+  $('businessProfileSection').classList.add('hidden');
+  $('notificationInbox').classList.add('hidden');
 
   $('customerHome').classList.add('hidden');
   $('businessHome').classList.add('hidden');
@@ -396,6 +553,10 @@ $('exploreSection').classList.add('hidden');
     $('customerHome').classList.remove('hidden');
     $('welcome').textContent='Welcome to C2B';
   }
+
+  loadNotifications();
+}
+
 }
 
  
@@ -689,6 +850,58 @@ $('backFromCustomerEnquiries').onclick=()=>{
   $('customerEnquiriesSection').classList.add('hidden');
   $('customerHome').classList.remove('hidden');
 };
+
+$('openNotifications').onclick=async()=>{
+  $('customerHome').classList.add('hidden');
+  $('businessHome').classList.add('hidden');
+  $('exploreSection').classList.add('hidden');
+  $('quoteSection').classList.add('hidden');
+  $('customerEnquiriesSection').classList.add('hidden');
+  $('enquiriesSection').classList.add('hidden');
+  $('businessProfileSection').classList.add('hidden');
+
+  $('notificationInbox').classList.remove('hidden');
+
+  await loadNotifications();
+};
+
+$('refreshNotifications').onclick=()=>{
+  loadNotifications();
+};
+
+$('markAllRead').onclick=async()=>{
+  const {data:{user},error:userError}=await client.auth.getUser();
+
+  if(userError||!user){
+    say('Please sign in again.');
+    return;
+  }
+
+  const {error}=await client
+    .from('notifications')
+    .update({is_read:true})
+    .eq('recipient_id',user.id)
+    .eq('is_read',false);
+
+  if(error){
+    say('Could not update notifications: '+error.message);
+    return;
+  }
+
+  say('All notifications marked as read.');
+  await loadNotifications();
+};
+
+$('backFromNotifications').onclick=()=>{
+  $('notificationInbox').classList.add('hidden');
+
+  if(currentRole==='business'){
+    $('businessHome').classList.remove('hidden');
+  }else{
+    $('customerHome').classList.remove('hidden');
+  }
+};
+
 </script>
 </body>
 </html>
