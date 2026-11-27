@@ -489,12 +489,6 @@ const typeLabel=
     ? 'Quote received'
     : 'Notification';
 
-      n.notification_type==='new_enquiry'
-        ? 'New enquiry'
-        : n.notification_type==='status_update'
-        ? 'Status update'
-        : 'Notification';
-
     const serviceName=
       n.quote_requests?.service_required||'Enquiry details unavailable';
 
@@ -1376,6 +1370,7 @@ $('backFromCustomerEnquiries').onclick=()=>{
 };
 
 $('openNotifications').onclick=async()=>{
+$('enquiriesSection').classList.add('hidden');
   $('customerHome').classList.add('hidden');
   $('businessHome').classList.add('hidden');
   $('exploreSection').classList.add('hidden');
