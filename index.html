@@ -6,6 +6,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>C2B | Create account or sign in</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.addEventListener('error', function(event) {
+  const box = document.getElementById('status');
+  if (box) {
+    box.textContent = 'JavaScript error: ' + event.message;
+  }
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+  const box = document.getElementById('status');
+  if (box) {
+    box.textContent = 'App error: ' + event.reason;
+  }
+});
+</script>
 <style>
 :root{--navy:#10233e;--green:#24d27a;--blue:#2d8cff;--cream:#f7f4ea;--ink:#15283d;--muted:#617087}
 *{box-sizing:border-box}
@@ -281,12 +296,7 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
 
   <div id="enquiriesList"></div>
 
-  <button type="button" id="backFromEnquiries" class="secondary">
-    Back to dashboard
-  </button>
-</div>
-
-  <button type="button" id="backFromEnquiries" class="secondary">
+    <button type="button" id="backFromEnquiries" class="secondary">
     Back to dashboard
   </button>
 </div>
@@ -750,7 +760,7 @@ async function loadEnquiries(){
   renderBusinessEnquiries();
 }
 
-}
+
 
 async function loadCustomerEnquiries(){
   const list=$('customerEnquiriesList');
