@@ -736,7 +736,7 @@ async function loadEnquiries(){
   const {data,error}=await client
     .from('quote_requests')
     .select(`
-      id,
+      id,customer_id,
       customer_name,
       service_required,
       work_description,
@@ -845,6 +845,7 @@ function showSession(user){
   $('quoteSection').classList.add('hidden');
   $('customerEnquiriesSection').classList.add('hidden');
   $('enquiriesSection').classList.add('hidden');
+$('sendQuoteSection').classList.add('hidden');
   $('businessProfileSection').classList.add('hidden');
   $('notificationInbox').classList.add('hidden');
 
@@ -1135,6 +1136,76 @@ $('viewEnquiries').onclick=()=>{
 };
 
 $('backFromEnquiries').onclick=()=>{
+
+$('cancelBusinessQuote').onclick=()=>{
+  $('sendQuoteSection').classList.add('hidden');
+  $('enquiriesSection').classList.remove('hidden');
+};
+
+$('submitBusinessQuote').onclick=async()=>{
+  const amount=Number($('businessQuoteAmount').value);
+  const message=$('businessQuoteMessage').value.trim();
+  const expiry=$('businessQuoteExpiry').value||null;
+
+  if(!selectedQuoteLead){
+    say('Please select a customer enquiry first.');
+    return;
+  }
+
+  if(!Number.isFinite(amount)||amount<=0){
+    say('Please enter a valid quotation amount.');
+    return;
+  }
+
+  if(!message){
+    say('Please enter the quotation details.');
+    return;
+  }
+
+  const button=$('submitBusinessQuote');
+  button.disabled=true;
+  say('Sending quotation...');
+
+  try{
+    const {data:{user},error:userError}=await client.auth.getUser();
+
+    if(userError||!user){
+      throw new Error('Please sign in again.');
+    }
+
+    const {error}=await client
+      .from('business_quotes')
+      .insert({
+        quote_request_id:selectedQuoteLead.id,
+        business_id:user.id,
+        customer_id:selectedQuoteLead.customer_id,
+        amount:amount,
+        message:message,
+        valid_until:expiry
+      });
+
+    if(error){
+      if(error.code==='23505'){
+        throw new Error('A quote has already been sent for this enquiry.');
+      }
+      throw error;
+    }
+
+    say('Quotation sent successfully. The customer has been notified.');
+
+    selectedQuoteLead=null;
+    $('sendQuoteSection').classList.add('hidden');
+    $('enquiriesSection').classList.remove('hidden');
+
+    await loadEnquiries();
+
+  }catch(e){
+    say('Could not send quotation: '+e.message);
+  }finally{
+    button.disabled=false;
+  }
+};
+
   $('enquiriesSection').classList.add('hidden');
   $('businessHome').classList.remove('hidden');
 };
