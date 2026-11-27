@@ -666,7 +666,11 @@ function renderBusinessEnquiries(){
           `
           : ''
         }
-
+        <button type="button"
+          class="send-quote-button"
+          data-id="${escapeHTML(q.id)}">
+          Send Quote
+        </button>
         <label for="status-${escapeHTML(q.id)}">
           Update enquiry status
         </label>
