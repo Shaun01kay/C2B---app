@@ -251,10 +251,40 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
     <button type="button" id="viewEnquiries">View enquiries</button>
   </div>
 <div id="enquiriesSection" class="hidden">
-  <h2>Customer enquiries</h2>
-  <p class="sub">View and manage your customer quote requests.</p>
+  <h2>Business Enquiries & Leads</h2>
+
+  <p class="sub">
+    Manage customer requests, follow up on leads and track your work.
+  </p>
+
+  <div class="lead-toolbar">
+    <div id="leadSummary" class="lead-summary">
+      Loading your lead summary...
+    </div>
+
+    <label for="leadFilter">Filter enquiries</label>
+    <select id="leadFilter">
+      <option value="all">All enquiries</option>
+      <option value="new">New</option>
+      <option value="in_progress">In Progress</option>
+      <option value="completed">Completed</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+
+    <label for="leadSearch">Search your leads</label>
+    <input
+      id="leadSearch"
+      type="text"
+      placeholder="Search customer, service or location..."
+    >
+  </div>
 
   <div id="enquiriesList"></div>
+
+  <button type="button" id="backFromEnquiries" class="secondary">
+    Back to dashboard
+  </button>
+</div>
 
   <button type="button" id="backFromEnquiries" class="secondary">
     Back to dashboard
@@ -472,58 +502,172 @@ async function loadNotifications(){
 
 
     
-async function loadEnquiries(){
+
+
+  
+    
+
+        
+let businessEnquiries=[];
+
+function renderBusinessEnquiries(){
   const list=$('enquiriesList');
-  list.innerHTML='<p>Loading enquiries...</p>';
+  const filter=$('leadFilter').value;
+  const search=$('leadSearch').value.toLowerCase().trim();
 
-  const {data:{user},error:userError}=await client.auth.getUser();
+  const counts={
+    all:businessEnquiries.length,
+    new:0,
+    in_progress:0,
+    completed:0,
+    cancelled:0
+  };
 
-  if(userError||!user){
-    list.innerHTML='<p>Please sign in again.</p>';
+  businessEnquiries.forEach(q=>{
+    const status=q.status||'new';
+    if(counts[status]!==undefined)counts[status]++;
+  });
+
+  $('leadSummary').innerHTML=`
+    <strong>Total leads:</strong> ${counts.all}
+    <br>
+    <strong>New:</strong> ${counts.new}
+    &nbsp; | &nbsp;
+    <strong>In Progress:</strong> ${counts.in_progress}
+    <br>
+    <strong>Completed:</strong> ${counts.completed}
+    &nbsp; | &nbsp;
+    <strong>Cancelled:</strong> ${counts.cancelled}
+  `;
+
+  const filtered=businessEnquiries.filter(q=>{
+    const status=q.status||'new';
+
+    const matchesStatus=
+      filter==='all'||status===filter;
+
+    const searchable=[
+      q.customer_name,
+      q.service_required,
+      q.work_description,
+      q.location,
+      q.contact_number
+    ].join(' ').toLowerCase();
+
+    return matchesStatus&&searchable.includes(search);
+  });
+
+  if(filtered.length===0){
+    list.innerHTML='<p>No matching enquiries found.</p>';
     return;
   }
 
-  const {data,error}=await client
-    .from('quote_requests')
-    .select('id,service_required,work_description,location,contact_number,status,created_at')
-    .eq('business_id',user.id)
-    .order('created_at',{ascending:false});
+  list.innerHTML=filtered.map(q=>{
+    const status=q.status||'new';
+    const info=getStatusInfo(status);
 
-  if(error){
-    console.error(error);
-    list.innerHTML='<p>Could not load enquiries.</p>';
-    return;
-  }
+    const received=new Date(q.created_at);
+    const receivedText=received.toLocaleString();
 
-  if(!data||data.length===0){
-    list.innerHTML='<p>No enquiries yet.</p>';
-    return;
-  }
+    const hoursWaiting=Math.max(
+      0,
+      Math.floor((Date.now()-received.getTime())/3600000)
+    );
 
- list.innerHTML=data.map(q=>`
-  <div class="business-card">
-    <h3>${escapeHTML(q.service_required||'Service request')}</h3>
-    <p>${escapeHTML(q.work_description||'')}</p>
-    <p><strong>Location:</strong> ${escapeHTML(q.location||'')}</p>
-    <p><strong>Contact:</strong> ${escapeHTML(q.contact_number||'')}</p>
-    <p><strong>Status:</strong> ${escapeHTML(q.status||'new')}</p>
+    let waitingText;
 
-    <label for="status-${escapeHTML(q.id)}">Update status</label>
+    if(hoursWaiting<1){
+      waitingText='Received less than an hour ago';
+    }else if(hoursWaiting<24){
+      waitingText='Waiting '+hoursWaiting+' hours';
+    }else{
+      waitingText='Waiting '+Math.floor(hoursWaiting/24)+' days';
+    }
 
-    <select id="status-${escapeHTML(q.id)}">
-      <option value="new" ${q.status==='new'?'selected':''}>New</option>
-      <option value="in_progress" ${q.status==='in_progress'?'selected':''}>In Progress</option>
-      <option value="completed" ${q.status==='completed'?'selected':''}>Completed</option>
-      <option value="cancelled" ${q.status==='cancelled'?'selected':''}>Cancelled</option>
-    </select>
+    const phoneDigits=String(q.contact_number||'')
+      .replace(/\D/g,'');
 
-    <button type="button"
-      class="update-enquiry-status"
-      data-id="${escapeHTML(q.id)}">
-      Update status
-    </button>
-  </div>
-`).join('');
+    const whatsappNumber=phoneDigits.startsWith('0')
+      ? '27'+phoneDigits.substring(1)
+      : phoneDigits;
+
+    return `
+      <div class="business-card enquiry-card">
+
+        <h3>${escapeHTML(q.service_required||'Service request')}</h3>
+
+        <p>
+          <strong>Customer:</strong>
+          ${escapeHTML(q.customer_name||'Customer name unavailable')}
+        </p>
+
+        <p>
+          <strong>Work requested:</strong><br>
+          ${escapeHTML(q.work_description||'No description provided')}
+        </p>
+
+        <p>
+          <strong>Location:</strong>
+          ${escapeHTML(q.location||'Not provided')}
+        </p>
+
+        <p>
+          <strong>Contact number:</strong>
+          ${escapeHTML(q.contact_number||'Not provided')}
+        </p>
+
+        <div class="status-badge ${info.className}">
+          ${info.label}
+        </div>
+
+        <p>
+          <strong>Received:</strong>
+          ${escapeHTML(receivedText)}
+        </p>
+
+        <p>
+          <strong>Lead age:</strong>
+          ${escapeHTML(waitingText)}
+        </p>
+
+        ${
+          phoneDigits
+          ? `
+            <a class="lead-contact"
+              href="tel:${phoneDigits}">
+              Call customer
+            </a>
+
+            <a class="lead-contact whatsapp"
+              href="https://wa.me/${whatsappNumber}"
+              target="_blank"
+              rel="noopener">
+              WhatsApp customer
+            </a>
+          `
+          : ''
+        }
+
+        <label for="status-${escapeHTML(q.id)}">
+          Update enquiry status
+        </label>
+
+        <select id="status-${escapeHTML(q.id)}">
+          <option value="new" ${status==='new'?'selected':''}>New</option>
+          <option value="in_progress" ${status==='in_progress'?'selected':''}>In Progress</option>
+          <option value="completed" ${status==='completed'?'selected':''}>Completed</option>
+          <option value="cancelled" ${status==='cancelled'?'selected':''}>Cancelled</option>
+        </select>
+
+        <button type="button"
+          class="update-enquiry-status"
+          data-id="${escapeHTML(q.id)}">
+          Save status
+        </button>
+
+      </div>
+    `;
+  }).join('');
 
   list.querySelectorAll('.update-enquiry-status').forEach(button=>{
     button.onclick=async()=>{
@@ -534,22 +678,78 @@ async function loadEnquiries(){
       say('Updating enquiry status...');
 
       try{
-        const {error}=await client
+        const {data:{user},error:userError}=await client.auth.getUser();
+
+        if(userError||!user){
+          throw new Error('Please sign in again.');
+        }
+
+        const {data,error}=await client
           .from('quote_requests')
           .update({status})
-          .eq('id',id);
+          .eq('id',id)
+          .eq('business_id',user.id)
+          .select('id')
+          .maybeSingle();
 
         if(error)throw error;
+
+        if(!data){
+          throw new Error('This enquiry could not be updated.');
+        }
 
         say('Enquiry status updated successfully.');
         await loadEnquiries();
 
       }catch(e){
-        say('Could not update enquiry status: '+e.message);
+        say('Could not update status: '+e.message);
         button.disabled=false;
       }
     };
   });
+}
+
+async function loadEnquiries(){
+  const list=$('enquiriesList');
+  list.innerHTML='<p>Loading enquiries...</p>';
+
+  $('leadFilter').onchange=renderBusinessEnquiries;
+  $('leadSearch').oninput=renderBusinessEnquiries;
+
+  const {data:{user},error:userError}=await client.auth.getUser();
+
+  if(userError||!user){
+    list.innerHTML='<p>Please sign in again.</p>';
+    return;
+  }
+
+  const {data,error}=await client
+    .from('quote_requests')
+    .select(`
+      id,
+      customer_name,
+      service_required,
+      work_description,
+      location,
+      contact_number,
+      status,
+      created_at
+    `)
+    .eq('business_id',user.id)
+    .order('created_at',{ascending:false});
+
+  if(error){
+    console.error(error);
+    list.innerHTML=
+      '<p>Could not load enquiries: '+escapeHTML(error.message)+'</p>';
+    return;
+  }
+
+  businessEnquiries=data||[];
+
+  renderBusinessEnquiries();
+}
+
 }
 
 async function loadCustomerEnquiries(){
