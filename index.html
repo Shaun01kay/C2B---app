@@ -445,7 +445,16 @@ async function loadNotifications(){
   }
 
   list.innerHTML=notifications.map(n=>{
-    const typeLabel=
+    
+const typeLabel=
+  n.notification_type==='new_enquiry'
+    ? 'New enquiry'
+    : n.notification_type==='status_update'
+    ? 'Status update'
+    : n.notification_type==='quote_received'
+    ? 'Quote received'
+    : 'Notification';
+
       n.notification_type==='new_enquiry'
         ? 'New enquiry'
         : n.notification_type==='status_update'
@@ -762,6 +771,10 @@ async function loadEnquiries(){
 
 
 
+
+
+  
+
 async function loadCustomerEnquiries(){
   const list=$('customerEnquiriesList');
   list.innerHTML='<p>Loading your enquiries...</p>';
@@ -790,30 +803,94 @@ async function loadCustomerEnquiries(){
     return;
   }
 
-  
-list.innerHTML=data.map(q=>{
-  const info=getStatusInfo(q.status||'new');
+  const {data:quotes,error:quotesError}=await client
+    .from('business_quotes')
+    .select('id,quote_request_id,amount,currency,message,valid_until,created_at')
+    .eq('customer_id',user.id)
+    .order('created_at',{ascending:false});
 
-  return `
-    <div class="business-card enquiry-card">
-      <h3>${escapeHTML(q.service_required||'Service request')}</h3>
+  if(quotesError){
+    console.error('Could not load quotations:',quotesError);
+  }
 
-      <p><strong>Business:</strong> ${escapeHTML(q.business_profiles?.business_name||'Business name unavailable')}</p>
+  const quoteMap={};
 
-      <p>${escapeHTML(q.work_description||'')}</p>
+  (quotes||[]).forEach(quote=>{
+    quoteMap[quote.quote_request_id]=quote;
+  });
 
-      <p><strong>Location:</strong> ${escapeHTML(q.location||'')}</p>
+  list.innerHTML=data.map(q=>{
+    const info=getStatusInfo(q.status||'new');
+    const quote=quoteMap[q.id];
 
-      <div class="status-badge ${info.className}">${info.label}</div>
+    let quoteHTML='';
 
-      <p>${info.message}</p>
+    if(quote){
+      const amount=Number(quote.amount).toLocaleString('en-ZA',{
+        style:'currency',
+        currency:'ZAR'
+      });
 
-      <p><strong>Submitted:</strong> ${escapeHTML(new Date(q.created_at).toLocaleDateString())}</p>
-    </div>
-  `;
-}).join('');
+      quoteHTML=`
+        <div class="business-card">
+          <h3>Quotation received</h3>
 
+          <p>
+            <strong>Quotation amount:</strong>
+            ${escapeHTML(amount)}
+          </p>
+
+          <p>
+            <strong>Quote details:</strong><br>
+            ${escapeHTML(quote.message)}
+          </p>
+
+          <p>
+            <strong>Valid until:</strong>
+            ${escapeHTML(quote.valid_until||'Not specified')}
+          </p>
+
+          <p>
+            <strong>Received:</strong>
+            ${escapeHTML(new Date(quote.created_at).toLocaleDateString())}
+          </p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="business-card enquiry-card">
+        <h3>${escapeHTML(q.service_required||'Service request')}</h3>
+
+        <p>
+          <strong>Business:</strong>
+          ${escapeHTML(q.business_profiles?.business_name||'Business name unavailable')}
+        </p>
+
+        <p>${escapeHTML(q.work_description||'')}</p>
+
+        <p>
+          <strong>Location:</strong>
+          ${escapeHTML(q.location||'')}
+        </p>
+
+        <div class="status-badge ${info.className}">
+          ${info.label}
+        </div>
+
+        <p>${info.message}</p>
+
+        <p>
+          <strong>Submitted:</strong>
+          ${escapeHTML(new Date(q.created_at).toLocaleDateString())}
+        </p>
+
+        ${quoteHTML}
+      </div>
+    `;
+  }).join('');
 }
+
 
 
   
