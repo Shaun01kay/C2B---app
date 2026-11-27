@@ -301,6 +301,40 @@ button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;backg
   </button>
 </div>
 
+
+<div id="sendQuoteSection" class="hidden">
+  <h2>Send a Quote</h2>
+  <p class="sub">Prepare a quotation for your customer.</p>
+
+  <div id="quoteCustomerDetails" class="lead-summary"></div>
+
+  <label for="businessQuoteAmount">Quotation amount (R)</label>
+  <input
+    id="businessQuoteAmount"
+    type="number"
+    min="0.01"
+    step="0.01"
+    placeholder="e.g. 2500.00"
+  >
+
+  <label for="businessQuoteMessage">Message and quote details</label>
+  <textarea
+    id="businessQuoteMessage"
+    placeholder="Describe what is included in this quotation..."
+  ></textarea>
+
+  <label for="businessQuoteExpiry">Quote valid until (optional)</label>
+  <input id="businessQuoteExpiry" type="date">
+
+  <button type="button" id="submitBusinessQuote">
+    Send quotation
+  </button>
+
+  <button type="button" id="cancelBusinessQuote" class="secondary">
+    Back to enquiries
+  </button>
+</div>
+
 <div id="businessProfileSection" class="hidden">
   <h2>Create your business profile</h2>
   <p class="sub">Tell customers about your business and the services you offer.</p>
@@ -528,6 +562,7 @@ const typeLabel=
 
         
 let businessEnquiries=[];
+let selectedQuoteLead=null;
 
 function renderBusinessEnquiries(){
   const list=$('enquiriesList');
@@ -692,7 +727,41 @@ function renderBusinessEnquiries(){
     `;
   }).join('');
 
-  list.querySelectorAll('.update-enquiry-status').forEach(button=>{
+
+list.querySelectorAll('.send-quote-button').forEach(button=>{
+  button.onclick=()=>{
+    const lead=businessEnquiries.find(
+      q=>q.id===button.dataset.id
+    );
+
+    if(!lead){
+      say('Could not find this enquiry.');
+      return;
+    }
+
+    selectedQuoteLead=lead;
+
+    $('quoteCustomerDetails').innerHTML=`
+      <strong>Customer:</strong>
+      ${escapeHTML(lead.customer_name||'Customer')}
+      <br>
+      <strong>Service:</strong>
+      ${escapeHTML(lead.service_required||'Not specified')}
+      <br>
+      <strong>Location:</strong>
+      ${escapeHTML(lead.location||'Not provided')}
+    `;
+
+    $('businessQuoteAmount').value='';
+    $('businessQuoteMessage').value='';
+    $('businessQuoteExpiry').value='';
+
+    $('enquiriesSection').classList.add('hidden');
+    $('sendQuoteSection').classList.remove('hidden');
+  };
+});
+  
+list.querySelectorAll('.update-enquiry-status').forEach(button=>{
     button.onclick=async()=>{
       const id=button.dataset.id;
       const status=$(`status-${id}`).value;
@@ -1216,7 +1285,11 @@ $('viewEnquiries').onclick=()=>{
   loadEnquiries();
 };
 
+    
 $('backFromEnquiries').onclick=()=>{
+  $('enquiriesSection').classList.add('hidden');
+  $('businessHome').classList.remove('hidden');
+};
 
 $('cancelBusinessQuote').onclick=()=>{
   $('sendQuoteSection').classList.add('hidden');
@@ -1287,9 +1360,6 @@ $('submitBusinessQuote').onclick=async()=>{
   }
 };
 
-  $('enquiriesSection').classList.add('hidden');
-  $('businessHome').classList.remove('hidden');
-};
 $('backToHome').onclick=()=>{
   $('exploreSection').classList.add('hidden');
   $('customerHome').classList.remove('hidden');
